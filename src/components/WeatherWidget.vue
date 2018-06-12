@@ -39,21 +39,16 @@
 
 <script>
   export default {
-    name: 'HelloWorld',
+    name: 'WeatherWidget',
     data() {
       return {
         city: ['warsaw', 'lodz', 'berlin', 'london', 'new york'],
         weatherData: []
       }
     },
-    props: {
-      msg: String
-    },
     created() {
-      // create array of numbers 0 to city.length
       this.fetchWeatherForecast();
       setInterval(this.fetchWeatherForecast, 10000);
-
     },
     filters: {
       roundNumber(d) {
@@ -68,34 +63,42 @@
     },
     methods: {
       fetchWeatherForecast() {
-        this.weatherData = this.weatherData.slice(5);
-        let biggestCityIndex = this.city.length;
-        var threeIndexes = [];
-        let currentTemperature = [];
+
+        let biggestCityIndex = this.city.length,
+            threeIndexes = [];
+
+        // get three random numbers
         while (threeIndexes.length < 3) {
-          var randomnumber = Math.floor(Math.random() * biggestCityIndex);
+          let randomnumber = Math.floor(Math.random() * biggestCityIndex);
           if (threeIndexes.indexOf(randomnumber) > -1) continue;
           threeIndexes[threeIndexes.length] = randomnumber;
         }
 
+        // clear current temperature
+        this.weatherData = this.weatherData.slice(3);
 
         threeIndexes.map((d) => {
           this.$jsonp(
+
+            // fetching data
             `https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20weather.forecast%20where%20woeid%20in%20(select%20woeid%20from%20geo.places(1)%20where%20text%3D%22${this.city[d]}%22)&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys`
           ).then(json => {
-            let tempInFarenheit = json.query.results.channel.item.condition.temp;
+
+            // fetch weather image 
             let queryDescription = json.query.results.channel.item.description;
+            let imageRegex = /(https?:\/\/.*\.(?:png|gif))/i;
+            let findUri = imageRegex.exec(queryDescription);
+            let imageUri = findUri[1];
 
-            var imageRegex = /(https?:\/\/.*\.(?:png|gif))/i;
-            var findUri = imageRegex.exec(queryDescription);
-            var imageUri = findUri[1];
-
-            let tempToCelsius = (tempInFarenheit - 32) * 5 / 9;
+            // fetch temperature and convert to celsius
+            let tempInFahrenheit = json.query.results.channel.item.condition.temp;
+            let tempToCelsius = (tempInFahrenheit - 32) * 5 / 9;
             this.weatherData.push({
               name: this.city[d],
               temp: tempToCelsius,
               image: imageUri
             })
+
           });
         })
       }
@@ -110,9 +113,7 @@
   }
 
   .fade-enter,
-  .fade-leave-to
-
-    {
+  .fade-leave-to {
     opacity: 0;
   }
 
